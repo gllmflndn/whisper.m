@@ -143,9 +143,41 @@ static void mex_whisper_run (int nlhs, mxArray *plhs[], int nrhs, const mxArray 
     }
     
     const int n_segments = whisper_full_n_segments (ctx);
+    plhs[0] = mxCreateCellMatrix (1, n_segments);
+    int n_tokens = 0;
     for (i = 0; i < n_segments; ++i) {
+        n_tokens += whisper_full_n_tokens (ctx, i);
+    }
+    const char *fields[] = {"text", "p", "t0", "t1"};
+    plhs[1] = mxCreateStructMatrix (1, n_tokens, 4, fields);
+    int k = 0;
+    for (i = 0; i < n_segments; ++i) {
+        const int64_t t0 = whisper_full_get_segment_t0 (ctx, i);
+        const int64_t t1 = whisper_full_get_segment_t1 (ctx, i);
+        
+        for (int j = 0; j < whisper_full_n_tokens (ctx, i); ++j) {
+            if (wparams.print_special == false) {
+                const whisper_token id = whisper_full_get_token_id (ctx, i, j);
+                if (id >= whisper_token_eot (ctx)) {
+                    continue;
+                }
+            }
+
+            const char * text = whisper_full_get_token_text (ctx, i, j);
+            const whisper_token_data data = whisper_full_get_token_data (ctx, i, j);
+            mxSetFieldByNumber (plhs[1], k, 0, mxCreateString (text));
+            mxSetFieldByNumber (plhs[1], k, 1, mxCreateDoubleScalar (data.p));
+            // requires: struct('token_timestamps',true) else t0,t1 set to -1
+            mxSetFieldByNumber (plhs[1], k, 2, mxCreateDoubleScalar (data.t0));
+            mxSetFieldByNumber (plhs[1], k, 3, mxCreateDoubleScalar (data.t1));
+            k++;
+            //mexPrintf("%s", text);
+        }
+        
         const char * text = whisper_full_get_segment_text (ctx, i);
-        mexPrintf ("%d %s\n", i, text);
+        
+        mxSetCell (plhs[0], i, mxCreateString (text));
+        //mexPrintf ("%d %s\n", i, text);
     }
 }
 
