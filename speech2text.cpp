@@ -69,20 +69,20 @@ struct whisper_params {
 struct whisper_print_user_data {
     const whisper_params * params;
 
-    const std::vector<std::vector<float>> * pcmf32s;
+    //const std::vector<std::vector<float>> * pcmf32s;
 };
 
 void whisper_print_segment_callback(struct whisper_context * ctx, int n_new, void * user_data) {
     const auto & params  = *((whisper_print_user_data *) user_data)->params;
-    const auto & pcmf32s = *((whisper_print_user_data *) user_data)->pcmf32s;
+    //const auto & pcmf32s = *((whisper_print_user_data *) user_data)->pcmf32s;
 
     const int n_segments = whisper_full_n_segments(ctx);
 
     // print the last n_new segments
     const int s0 = n_segments - n_new;
-    if (s0 == 0) {
-        printf("\n");
-    }
+    //if (s0 == 0) {
+    //    printf("\n");
+    //}
 
     for (int i = s0; i < n_segments; i++) {
         if (params.no_timestamps) {
@@ -113,30 +113,30 @@ void whisper_print_segment_callback(struct whisper_context * ctx, int n_new, voi
 
             std::string speaker = "";
 
-            if (params.diarize && pcmf32s.size() == 2) {
-                const int64_t n_samples = pcmf32s[0].size();
+            //if (params.diarize && pcmf32s.size() == 2) {
+            //    const int64_t n_samples = pcmf32s[0].size();
+//
+            //    const int64_t is0 = timestamp_to_sample(t0, n_samples);
+            //    const int64_t is1 = timestamp_to_sample(t1, n_samples);
+//
+            //    double energy0 = 0.0f;
+            //    double energy1 = 0.0f;
 
-                const int64_t is0 = timestamp_to_sample(t0, n_samples);
-                const int64_t is1 = timestamp_to_sample(t1, n_samples);
+            //    for (int64_t j = is0; j < is1; j++) {
+            //        energy0 += fabs(pcmf32s[0][j]);
+            //        energy1 += fabs(pcmf32s[1][j]);
+            //    }
 
-                double energy0 = 0.0f;
-                double energy1 = 0.0f;
-
-                for (int64_t j = is0; j < is1; j++) {
-                    energy0 += fabs(pcmf32s[0][j]);
-                    energy1 += fabs(pcmf32s[1][j]);
-                }
-
-                if (energy0 > 1.1*energy1) {
-                    speaker = "(speaker 0)";
-                } else if (energy1 > 1.1*energy0) {
-                    speaker = "(speaker 1)";
-                } else {
-                    speaker = "(speaker ?)";
-                }
+            //    if (energy0 > 1.1*energy1) {
+            //        speaker = "(speaker 0)";
+            //    } else if (energy1 > 1.1*energy0) {
+            //        speaker = "(speaker 1)";
+            //    } else {
+            //        speaker = "(speaker ?)";
+            //    }
 
                 //printf("is0 = %lld, is1 = %lld, energy0 = %f, energy1 = %f, %s\n", is0, is1, energy0, energy1, speaker.c_str());
-            }
+            //}
 
             if (params.print_colors) {
                 printf("[%s --> %s]  ", to_timestamp(t0).c_str(), to_timestamp(t1).c_str());
@@ -168,10 +168,17 @@ void whisper_print_segment_callback(struct whisper_context * ctx, int n_new, voi
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     whisper_params params;
     
+    //FILE *FID = freopen("/dev/null", "w", stderr); // silence whisper_model_load in whisper_init
+    
     struct whisper_context * ctx = whisper_init(params.model.c_str());
+
+    //fclose(FID);
 
     if (nrhs < 1) {
         mexErrMsgTxt("Sound input missing");
+    }
+    if (!mxIsSingle(prhs[0])) {
+        mexErrMsgTxt("Input has to be single-precision, floating-point numbers");
     }
     size_t n = mxGetNumberOfElements(prhs[0]);
     float *data = (float*)mxGetData(prhs[0]);
@@ -181,7 +188,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
     
     std::vector<float> pcmf32; // mono-channel F32 PCM
-    std::vector<std::vector<float>> pcmf32s; // stereo-channel F32 PCM
+    //std::vector<std::vector<float>> pcmf32s; // stereo-channel F32 PCM
 
     pcmf32.resize(n);
     for (int i = 0; i < n; i++) {
@@ -207,7 +214,7 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
 
     wparams.speed_up         = params.speed_up;
 
-    whisper_print_user_data user_data = { &params, &pcmf32s };
+    whisper_print_user_data user_data = { &params }; //, &pcmf32s };
 
     if (!wparams.print_realtime) {
         wparams.new_segment_callback           = whisper_print_segment_callback;
