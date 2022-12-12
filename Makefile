@@ -1,15 +1,16 @@
 MEX = mex
 MEXEXT = mexa64
 OBJEXT = o
+CFLAGS = -O3 -mavx -mavx2 -mfma -mf16c
 
-all: speech2text.$(MEXEXT)
+all: @whisper/private/whisper_mex.$(MEXEXT)
 
-speech2text.$(MEXEXT): speech2text.cpp ggml.$(OBJEXT) whisper.$(OBJEXT)
-	$(MEX) speech2text.cpp ggml.$(OBJEXT) whisper.$(OBJEXT)
+@whisper/private/whisper_mex.$(MEXEXT): speech2text.cpp @whisper/private/ggml.$(OBJEXT) @whisper/private/whisper.$(OBJEXT)
+	$(MEX) @whisper/private/whisper_mex.cpp -I. @whisper/private/ggml.$(OBJEXT) @whisper/private/whisper.$(OBJEXT) -outdir @whisper/private/
 
-whisper.$(OBJEXT): whisper.cpp/whisper.cpp whisper.cpp/whisper.h
-	$(MEX) -c whisper.cpp/whisper.cpp -outdir .
+@whisper/private/whisper.$(OBJEXT): whisper.cpp/whisper.cpp whisper.cpp/whisper.h
+	$(MEX) -c whisper.cpp/whisper.cpp -outdir @whisper/private/
 
-ggml.$(OBJEXT): whisper.cpp/ggml.c whisper.cpp/ggml.h
-	$(MEX) CFLAGS='$$CFLAGS -O3 -mavx -mavx2 -mfma -mf16c' -c whisper.cpp/ggml.c -outdir .
+@whisper/private/ggml.$(OBJEXT): whisper.cpp/ggml.c whisper.cpp/ggml.h
+	$(MEX) CFLAGS='$$CFLAGS ${CFLAGS}' -c whisper.cpp/ggml.c -outdir @whisper/private/
 # see whisper.cpp/Makefile
