@@ -159,20 +159,29 @@ static void mex_whisper_run (int nlhs, mxArray *plhs[], int nrhs, const mxArray 
             else if (!strcmp (fieldname, "new_segment_callback")) {
                 wparams.new_segment_callback = [](struct whisper_context * ctx, int n_new, void * user_data) {
                     mexPrintf("new_segment_callback\n");
-                    mexCallMATLAB (0,NULL,1,(mxArray**)user_data,"feval");
+                    mxArray *mi[2];
+                    mi[0] = ((mxArray**)user_data)[0];
+                    mi[1] = get_tokens (ctx, n_new);
+                    int sts = mexCallMATLAB (0, NULL, 2, mi, "feval");
+                    if (sts != 0) {
+                        mexErrMsgIdAndTxt ("whisper:new_segment", "New_segment callback failed");
+                    }
                 };
                 wparams.new_segment_callback_user_data = { &mx };
             }
             else if (!strcmp (fieldname, "encoder_begin_callback")) {
                 wparams.encoder_begin_callback = [](struct whisper_context * ctx, void * user_data) {
-                    bool is_aborted = false;
-                    mxArray *ma[1];
                     mexPrintf("encoder_begin_callback\n");
-                    int sts = mexCallMATLAB (1,ma,1,(mxArray**)user_data,"feval");
+                    bool is_aborted = false;
+                    mxArray *mi[2];
+                    mxArray *mo[1];
+                    mi[0] = ((mxArray**)user_data)[0];
+                    mi[1] = get_tokens (ctx, -1); // perhaps only the last N ones?
+                    int sts = mexCallMATLAB (1, mo, 2, mi, "feval");
                     if (sts != 0) {
                         mexErrMsgIdAndTxt ("whisper:encoder_begin", "Encoder_begin callback failed");
                     }
-                    is_aborted = mxIsLogicalScalarTrue (ma[0]);
+                    is_aborted = mxIsLogicalScalarTrue (mo[0]);
                     return !is_aborted;
                 };
                 wparams.encoder_begin_callback_user_data = { &mx };
