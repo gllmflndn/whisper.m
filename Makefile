@@ -1,7 +1,7 @@
 MEX = mex
 MEXEXT = mexa64
 OBJEXT = o
-CFLAGS = -O3 -mavx -mavx2 -mfma -mf16c
+CFLAGS = -O3 -mavx -mavx2 -mfma -mf16c # see whisper.cpp/Makefile
 
 all: @whisper/private/whisper_mex.$(MEXEXT)
 
@@ -13,4 +13,3 @@ all: @whisper/private/whisper_mex.$(MEXEXT)
 
 @whisper/private/ggml.$(OBJEXT): whisper.cpp/ggml.c whisper.cpp/ggml.h
 	$(MEX) CFLAGS='$$CFLAGS ${CFLAGS}' -c whisper.cpp/ggml.c -outdir @whisper/private/
-# see whisper.cpp/Makefile

@@ -1,3 +1,7 @@
+% Automatic speech recognition using whisper.cpp and OpenAI's Whisper
+%
+% Copyright (C) 2022 Guillaume Flandin
+
 classdef whisper < handle
 
     %======================================================================
@@ -8,7 +12,7 @@ classdef whisper < handle
     end
     
     properties (Access = private, Hidden = true)
-        ctx = [];
+        Context = [];
     end
     
     %======================================================================
@@ -22,14 +26,17 @@ classdef whisper < handle
         function this = whisper(model)
             if ~nargin
                 pth  = fileparts(fullfile(mfilename('fullpath')));
-                model = fullfile(pth,'..','whisper.cpp','models/ggml-base.en.bin');
+                model = fullfile(pth,'..','whisper.cpp','models','ggml-base.en.bin');
+            end
+            if ~exist(model,'file')
+                error('Pretrained model cannot be found.');
             end
             this.Model = model;
-            this.ctx = whisper_mex('init',this.Model);
+            this.Context = whisper_mex('init',this.Model);
         end
         
         %------------------------------------------------------------------
-        %-Inference
+        %-Run forward pass
         %------------------------------------------------------------------
         function [segments,tokens] = run(this,wav,opts)
             if nargin < 3
@@ -43,15 +50,15 @@ classdef whisper < handle
                     error('Sampling rate has to be 16kHz.');
                 end
             end
-            [segments,tokens] = whisper_mex('run',this.ctx,single(wav),opts{:});
+            [segments,tokens] = whisper_mex('run',this.Context,single(wav),opts{:});
         end
         
         %------------------------------------------------------------------
         %-Destructor
         %------------------------------------------------------------------
         function delete(this)
-            whisper_mex('free',this.ctx);
-            this.ctx = [];
+            whisper_mex('free',this.Context);
+            this.Context = [];
         end
     end
 
@@ -64,7 +71,7 @@ classdef whisper < handle
             pth  = fullfile(pth,'..');
             wav  = fullfile(pth,'sounds','FEP-Friston.wav');
             h    = whisper;
-            text = h.run(wav,struct('new_segment_callback',@()disp('hello')));
+            text = h.run(wav); %struct('new_segment_callback',@()disp('hello')));
             disp([text{:}]);
             delete(h);
         end
