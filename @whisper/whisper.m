@@ -25,12 +25,9 @@ classdef whisper < handle
         %------------------------------------------------------------------
         function this = whisper(model)
             if ~nargin
-                pth  = fileparts(fullfile(mfilename('fullpath')));
-                model = fullfile(pth,'..','whisper.cpp','models','ggml-base.en.bin');
+                model = 'base.en';
             end
-            if ~exist(model,'file')
-                error('Pretrained model cannot be found.');
-            end
+            model = get_model(model);
             this.Model = model;
             this.Context = whisper_mex('init',this.Model);
         end
@@ -67,14 +64,61 @@ classdef whisper < handle
     %======================================================================
     methods (Static)
         function demo
-            pth  = fileparts(fullfile(mfilename('fullpath')));
-            pth  = fullfile(pth,'..');
-            wav  = fullfile(pth,'sounds','FEP-Friston.wav');
-            h    = whisper;
-            text = h.run(wav); %struct('new_segment_callback',@()disp('hello')));
-            disp([text{:}]);
+            wav  = get_sound('FEP-Friston.wav');
+            h    = whisper('tiny.en');
+            [seg,tok] = h.run(wav);
+            display_tokens(tok)
             delete(h);
         end
     end
 
+end
+
+%==========================================================================
+%                       H E L P E R    F U N C T I O N S
+%==========================================================================
+function model = get_model(model)
+    if ismember(model,{'tiny.en','tiny','base.en','base','small.en','small','medium.en','medium','large-v1','large'})
+        pth  = fileparts(fullfile(mfilename('fullpath')));
+        pth  = fullfile(pth,'..','models');
+        name = sprintf('ggml-%s.bin',model);
+        filename = fullfile(pth,name);
+        if ~exist(filename,'file')
+            if ~exist(pth,'dir')
+                mkdir(pth);
+            end
+            url  = 'https://huggingface.co/datasets/ggerganov/whisper.cpp/resolve/main/';
+            fprintf('Download %s...',model);
+            websave(filename,[url name]);
+            fprintf('done\n');
+        end
+        model = filename;
+    end
+    if ~exist(model,'file')
+        error('Pre-trained model cannot be found.');
+    end
+end
+
+function sound = get_sound(sound)
+    pth   = fileparts(fullfile(mfilename('fullpath')));
+    pth   = fullfile(pth,'..','sounds');
+    sound = fullfile(pth,sound);
+end
+
+function display_tokens(tokens,use_colour)
+    if nargin < 2, use_colour = true; end
+    cols = arrayfun(@(x)sprintf('\033[38;5;%dm',x),...
+        [196,202,208,214,220,226,190,154,118,82],'UniformOutput',false);
+    if iscell(tokens)
+        disp([tokens{:}]);
+    else
+        if ~use_colour
+            disp([tokens.text]);
+        else
+            for i=1:numel(tokens)
+                col = max(1,round(tokens(i).p^3 * numel(cols)));
+                fprintf('%s%s\033[0m',cols{col},tokens(i).text);
+            end
+        end
+    end
 end
