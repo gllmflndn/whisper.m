@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2022 Guillaume Flandin
+ */
+
 #include "whisper.cpp/whisper.h"
 #include "mex.h"
 
@@ -8,6 +12,45 @@ static whisper_context *get_whisper_context (const mxArray *c) {
         mxGetNumberOfElements (c) != 1)
         mexErrMsgIdAndTxt ("whisper:context", "Context handle is not valid.");
     return (whisper_context*)(((uint64_t*)mxGetData (c))[0]);
+}
+
+static mxArray *get_tokens (struct whisper_context *ctx, int n_new) {
+    const int n_segments = whisper_full_n_segments (ctx);
+    if (n_new < 0) {
+        n_new = n_segments;
+    };
+    const int s0 = n_segments - n_new;
+    int n_tokens = 0;
+    for (int i = s0; i < n_segments; ++i) {
+        n_tokens += whisper_full_n_tokens (ctx, i);
+    }
+    const char *fields[] = {"text", "p", "t0", "t1"};
+    mxArray *mx = mxCreateStructMatrix (1, n_tokens, 4, fields);
+    int k = 0;
+    for (int i = s0; i < n_segments; ++i) {
+        const int64_t t0 = whisper_full_get_segment_t0 (ctx, i);
+        const int64_t t1 = whisper_full_get_segment_t1 (ctx, i);
+        
+        for (int j = 0; j < whisper_full_n_tokens (ctx, i); ++j) {
+            if (true) { // (wparams.print_special == false) {
+                const whisper_token id = whisper_full_get_token_id (ctx, i, j);
+                if (id >= whisper_token_eot (ctx)) {
+                    continue;
+                }
+            }
+
+            const char * text = whisper_full_get_token_text (ctx, i, j);
+            const whisper_token_data data = whisper_full_get_token_data (ctx, i, j);
+            mxSetFieldByNumber (mx, k, 0, mxCreateString (text));
+            mxSetFieldByNumber (mx, k, 1, mxCreateDoubleScalar (data.p));
+            // requires: struct('token_timestamps',true) else t0,t1 set to -1
+            mxSetFieldByNumber (mx, k, 2, mxCreateDoubleScalar (data.t0));
+            mxSetFieldByNumber (mx, k, 3, mxCreateDoubleScalar (data.t1));
+            k++;
+            //mexPrintf("%s", text);
+        }
+    }
+    return mx;
 }
 
 static void mex_whisper_init (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
@@ -123,8 +166,13 @@ static void mex_whisper_run (int nlhs, mxArray *plhs[], int nrhs, const mxArray 
             else if (!strcmp (fieldname, "encoder_begin_callback")) {
                 wparams.encoder_begin_callback = [](struct whisper_context * ctx, void * user_data) {
                     bool is_aborted = false;
+                    mxArray *ma[1];
                     mexPrintf("encoder_begin_callback\n");
-                    mexCallMATLAB (0,NULL,1,(mxArray**)user_data,"feval");
+                    int sts = mexCallMATLAB (1,ma,1,(mxArray**)user_data,"feval");
+                    if (sts != 0) {
+                        mexErrMsgIdAndTxt ("whisper:encoder_begin", "Encoder_begin callback failed");
+                    }
+                    is_aborted = mxIsLogicalScalarTrue (ma[0]);
                     return !is_aborted;
                 };
                 wparams.encoder_begin_callback_user_data = { &mx };
