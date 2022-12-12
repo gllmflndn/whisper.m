@@ -175,7 +175,6 @@ static void mex_whisper_run (int nlhs, mxArray *plhs[], int nrhs, const mxArray 
         }
         
         const char * text = whisper_full_get_segment_text (ctx, i);
-        
         mxSetCell (plhs[0], i, mxCreateString (text));
         //mexPrintf ("%d %s\n", i, text);
     }
