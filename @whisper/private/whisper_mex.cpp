@@ -158,7 +158,7 @@ static void mex_whisper_run (int nlhs, mxArray *plhs[], int nrhs, const mxArray 
             }
             else if (!strcmp (fieldname, "new_segment_callback")) {
                 wparams.new_segment_callback = [](struct whisper_context * ctx, int n_new, void * user_data) {
-                    mexPrintf("new_segment_callback\n");
+                    //mexPrintf("new_segment_callback\n");
                     mxArray *mi[2];
                     mi[0] = ((mxArray**)user_data)[0];
                     mi[1] = get_tokens (ctx, n_new);
@@ -171,7 +171,7 @@ static void mex_whisper_run (int nlhs, mxArray *plhs[], int nrhs, const mxArray 
             }
             else if (!strcmp (fieldname, "encoder_begin_callback")) {
                 wparams.encoder_begin_callback = [](struct whisper_context * ctx, void * user_data) {
-                    mexPrintf("encoder_begin_callback\n");
+                    //mexPrintf("encoder_begin_callback\n");
                     bool is_aborted = false;
                     mxArray *mi[2];
                     mxArray *mo[1];
