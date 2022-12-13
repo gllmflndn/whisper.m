@@ -53,6 +53,26 @@ static mxArray *get_tokens (struct whisper_context *ctx, int n_new) {
     return mx;
 }
 
+static mxArray *get_segments (struct whisper_context *ctx, int n_new) {
+    const int n_segments = whisper_full_n_segments (ctx);
+    if (n_new < 0) {
+        n_new = n_segments;
+    };
+    const int s0 = n_segments - n_new;
+    const char *fields[] = {"text", "t0", "t1"};
+    mxArray *mx = mxCreateStructMatrix (1, n_segments, 3, fields);
+    int k = 0;
+    for (int i = s0; i < n_segments; ++i) {
+        const int64_t t0 = whisper_full_get_segment_t0 (ctx, i);
+        const int64_t t1 = whisper_full_get_segment_t1 (ctx, i);
+        const char * text = whisper_full_get_segment_text (ctx, i);
+        mxSetFieldByNumber (mx, i, 0, mxCreateString (text));
+        mxSetFieldByNumber (mx, i, 1, mxCreateDoubleScalar (t0));
+        mxSetFieldByNumber (mx, i, 2, mxCreateDoubleScalar (t1));
+    }
+    return mx;
+}
+
 static void mex_whisper_init (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     struct whisper_context *ctx;
     char *path_model;
@@ -153,6 +173,18 @@ static void mex_whisper_run (int nlhs, mxArray *plhs[], int nrhs, const mxArray 
             else if (!strcmp (fieldname, "audio_ctx")) {
                 wparams.audio_ctx = (int)mxGetScalar (mx);
             }
+            else if (!strcmp (fieldname, "prompt_tokens")) {
+                if (wparams.prompt_n_tokens != 0) {
+                    mxFree ((void *)wparams.prompt_tokens);
+                }
+                whisper_token *id = (whisper_token *)mxGetData (mx);
+                whisper_token *prompt_tokens = (whisper_token *)mxMalloc (wparams.prompt_n_tokens * sizeof (whisper_token));
+                for (int j = 0; j < wparams.prompt_n_tokens; ++j) {
+                    prompt_tokens[j] = id[j];
+                }
+                wparams.prompt_tokens = prompt_tokens;
+                wparams.prompt_n_tokens = (int)mxGetNumberOfElements (mx);
+            }
             else if (!strcmp (fieldname, "language")) {
                 wparams.language = mxArrayToString (mx);
             }
@@ -199,42 +231,8 @@ static void mex_whisper_run (int nlhs, mxArray *plhs[], int nrhs, const mxArray 
         mexErrMsgIdAndTxt ("whisper:run", "Failed to process audio");
     }
     
-    const int n_segments = whisper_full_n_segments (ctx);
-    plhs[0] = mxCreateCellMatrix (1, n_segments);
-    int n_tokens = 0;
-    for (i = 0; i < n_segments; ++i) {
-        n_tokens += whisper_full_n_tokens (ctx, i);
-    }
-    const char *fields[] = {"text", "p", "t0", "t1"};
-    plhs[1] = mxCreateStructMatrix (1, n_tokens, 4, fields);
-    int k = 0;
-    for (i = 0; i < n_segments; ++i) {
-        const int64_t t0 = whisper_full_get_segment_t0 (ctx, i);
-        const int64_t t1 = whisper_full_get_segment_t1 (ctx, i);
-        
-        for (int j = 0; j < whisper_full_n_tokens (ctx, i); ++j) {
-            if (wparams.print_special == false) {
-                const whisper_token id = whisper_full_get_token_id (ctx, i, j);
-                if (id >= whisper_token_eot (ctx)) {
-                    continue;
-                }
-            }
-
-            const char * text = whisper_full_get_token_text (ctx, i, j);
-            const whisper_token_data data = whisper_full_get_token_data (ctx, i, j);
-            mxSetFieldByNumber (plhs[1], k, 0, mxCreateString (text));
-            mxSetFieldByNumber (plhs[1], k, 1, mxCreateDoubleScalar (data.p));
-            // requires: struct('token_timestamps',true) else t0,t1 set to -1
-            mxSetFieldByNumber (plhs[1], k, 2, mxCreateDoubleScalar (data.t0));
-            mxSetFieldByNumber (plhs[1], k, 3, mxCreateDoubleScalar (data.t1));
-            k++;
-            //mexPrintf("%s", text);
-        }
-        
-        const char * text = whisper_full_get_segment_text (ctx, i);
-        mxSetCell (plhs[0], i, mxCreateString (text));
-        //mexPrintf ("%d %s\n", i, text);
-    }
+    plhs[0] = get_segments (ctx, -1);
+    plhs[1] = get_tokens (ctx, -1);
 }
 
 static void mex_whisper_free (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
@@ -246,6 +244,58 @@ static void mex_whisper_free (int nlhs, mxArray *plhs[], int nrhs, const mxArray
     ctx = get_whisper_context (prhs[0]);
 
     whisper_free (ctx);
+}
+
+static void mex_whisper_lang_id (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    
+    if (nrhs < 1) mexErrMsgIdAndTxt ("whisper:minrhs", "Not enough input arguments.");
+    if (nrhs > 1) mexErrMsgIdAndTxt ("whisper:maxrhs", "Too many input arguments.");
+
+    plhs[0] = mxCreateDoubleScalar ((double)whisper_lang_id (mxArrayToString (prhs[0])));
+}
+
+static void mex_whisper_n_len (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    struct whisper_context *ctx;
+    
+    if (nrhs < 1) mexErrMsgIdAndTxt ("whisper:minrhs", "Not enough input arguments.");
+    if (nrhs > 1) mexErrMsgIdAndTxt ("whisper:maxrhs", "Too many input arguments.");
+
+    ctx = get_whisper_context (prhs[0]);
+    
+    plhs[0] = mxCreateDoubleScalar ((double)whisper_n_len (ctx));
+}
+
+static void mex_whisper_n_vocab (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    struct whisper_context *ctx;
+    
+    if (nrhs < 1) mexErrMsgIdAndTxt ("whisper:minrhs", "Not enough input arguments.");
+    if (nrhs > 1) mexErrMsgIdAndTxt ("whisper:maxrhs", "Too many input arguments.");
+
+    ctx = get_whisper_context (prhs[0]);
+    
+    plhs[0] = mxCreateDoubleScalar ((double)whisper_n_vocab (ctx));
+}
+
+static void mex_whisper_n_text_ctx (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    struct whisper_context *ctx;
+    
+    if (nrhs < 1) mexErrMsgIdAndTxt ("whisper:minrhs", "Not enough input arguments.");
+    if (nrhs > 1) mexErrMsgIdAndTxt ("whisper:maxrhs", "Too many input arguments.");
+
+    ctx = get_whisper_context (prhs[0]);
+    
+    plhs[0] = mxCreateDoubleScalar ((double)whisper_n_text_ctx (ctx));
+}
+
+static void mex_whisper_is_multilingual (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
+    struct whisper_context *ctx;
+    
+    if (nrhs < 1) mexErrMsgIdAndTxt ("whisper:minrhs", "Not enough input arguments.");
+    if (nrhs > 1) mexErrMsgIdAndTxt ("whisper:maxrhs", "Too many input arguments.");
+
+    ctx = get_whisper_context (prhs[0]);
+    
+    plhs[0] = mxCreateDoubleScalar ((double)whisper_is_multilingual (ctx));
 }
 
 void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
@@ -264,6 +314,21 @@ void mexFunction(int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     }
     else if (!strcmp (action, "free")) {
         mex_whisper_free (nlhs, plhs, nrhs-1, &prhs[1]);
+    }
+    else if (!strcmp (action, "lang_id")) {
+        mex_whisper_lang_id (nlhs, plhs, nrhs-1, &prhs[1]);
+    }
+    else if (!strcmp (action, "n_len")) {
+        mex_whisper_n_len (nlhs, plhs, nrhs-1, &prhs[1]);
+    }
+    else if (!strcmp (action, "n_vocab")) {
+        mex_whisper_n_vocab (nlhs, plhs, nrhs-1, &prhs[1]);
+    }
+    else if (!strcmp (action, "n_text_ctx")) {
+        mex_whisper_n_text_ctx (nlhs, plhs, nrhs-1, &prhs[1]);
+    }
+    else if (!strcmp (action, "is_multilingual")) {
+        mex_whisper_is_multilingual (nlhs, plhs, nrhs-1, &prhs[1]);
     }
     else {
         mexErrMsgTxt ("Unknown action.");
