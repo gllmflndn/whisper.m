@@ -7,11 +7,11 @@
 
 #include <string.h>
 
-static whisper_context *get_whisper_context (const mxArray *c) {
+static struct whisper_context *get_whisper_context (const mxArray *c) {
     if (!mxIsUint64 (c) || 
         mxGetNumberOfElements (c) != 1)
         mexErrMsgIdAndTxt ("whisper:context", "Context handle is not valid.");
-    return (whisper_context*)(((uint64_t*)mxGetData (c))[0]);
+    return (struct whisper_context*)(((uint64_t*)mxGetData (c))[0]);
 }
 
 static mxArray *get_tokens (struct whisper_context *ctx, int n_new) {
@@ -43,7 +43,7 @@ static mxArray *get_tokens (struct whisper_context *ctx, int n_new) {
             const whisper_token_data data = whisper_full_get_token_data (ctx, i, j);
             mxSetFieldByNumber (mx, k, 0, mxCreateString (text));
             mxSetFieldByNumber (mx, k, 1, mxCreateDoubleScalar (data.p));
-            // requires: struct('token_timestamps',true) else t0,t1 set to -1
+            // requires option ('token_timestamps',true) else t0,t1 set to -1
             mxSetFieldByNumber (mx, k, 2, mxCreateDoubleScalar (data.t0));
             mxSetFieldByNumber (mx, k, 3, mxCreateDoubleScalar (data.t1));
             k++;
@@ -73,6 +73,32 @@ static mxArray *get_segments (struct whisper_context *ctx, int n_new) {
     return mx;
 }
 
+static void new_segment_callback (struct whisper_context *ctx, int n_new, void *user_data) {
+   //mexPrintf("new_segment_callback\n");
+   mxArray *mi[2];
+   mi[0] = ((mxArray**)user_data)[0];
+   mi[1] = get_tokens (ctx, n_new);
+   int sts = mexCallMATLAB (0, NULL, 2, mi, "feval");
+   if (sts != 0) {
+       mexErrMsgIdAndTxt ("whisper:new_segment", "New_segment callback failed");
+   }
+}
+
+static bool encoder_begin_callback (struct whisper_context *ctx, void *user_data) {
+    //mexPrintf("encoder_begin_callback\n");
+    bool is_aborted = false;
+    mxArray *mi[2];
+    mxArray *mo[1];
+    mi[0] = ((mxArray**)user_data)[0];
+    mi[1] = get_tokens (ctx, -1); // perhaps only the last N ones?
+    int sts = mexCallMATLAB (1, mo, 2, mi, "feval");
+    if (sts != 0) {
+        mexErrMsgIdAndTxt ("whisper:encoder_begin", "Encoder_begin callback failed");
+    }
+    is_aborted = mxIsLogicalScalarTrue (mo[0]);
+    return !is_aborted;
+}
+
 static void mex_whisper_init (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     struct whisper_context *ctx;
     char *path_model;
@@ -96,7 +122,7 @@ static void mex_whisper_init (int nlhs, mxArray *plhs[], int nrhs, const mxArray
 
 static void mex_whisper_run (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     struct whisper_context *ctx;
-    whisper_full_params wparams = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
+    struct whisper_full_params wparams = whisper_full_default_params(WHISPER_SAMPLING_GREEDY);
     int i;
     int n_processors = 1;
     
@@ -189,34 +215,12 @@ static void mex_whisper_run (int nlhs, mxArray *plhs[], int nrhs, const mxArray 
                 wparams.language = mxArrayToString (mx);
             }
             else if (!strcmp (fieldname, "new_segment_callback")) {
-                wparams.new_segment_callback = [](struct whisper_context * ctx, int n_new, void * user_data) {
-                    //mexPrintf("new_segment_callback\n");
-                    mxArray *mi[2];
-                    mi[0] = ((mxArray**)user_data)[0];
-                    mi[1] = get_tokens (ctx, n_new);
-                    int sts = mexCallMATLAB (0, NULL, 2, mi, "feval");
-                    if (sts != 0) {
-                        mexErrMsgIdAndTxt ("whisper:new_segment", "New_segment callback failed");
-                    }
-                };
-                wparams.new_segment_callback_user_data = { &mx };
+                wparams.new_segment_callback = new_segment_callback;
+                wparams.new_segment_callback_user_data = &mx;
             }
             else if (!strcmp (fieldname, "encoder_begin_callback")) {
-                wparams.encoder_begin_callback = [](struct whisper_context * ctx, void * user_data) {
-                    //mexPrintf("encoder_begin_callback\n");
-                    bool is_aborted = false;
-                    mxArray *mi[2];
-                    mxArray *mo[1];
-                    mi[0] = ((mxArray**)user_data)[0];
-                    mi[1] = get_tokens (ctx, -1); // perhaps only the last N ones?
-                    int sts = mexCallMATLAB (1, mo, 2, mi, "feval");
-                    if (sts != 0) {
-                        mexErrMsgIdAndTxt ("whisper:encoder_begin", "Encoder_begin callback failed");
-                    }
-                    is_aborted = mxIsLogicalScalarTrue (mo[0]);
-                    return !is_aborted;
-                };
-                wparams.encoder_begin_callback_user_data = { &mx };
+                wparams.encoder_begin_callback = encoder_begin_callback;
+                wparams.encoder_begin_callback_user_data = &mx;
             }
             else if (!strcmp (fieldname, "n_processors")) {
                 n_processors = (int)mxGetScalar (mx);

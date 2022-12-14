@@ -98,7 +98,10 @@ classdef whisper < handle
 
         function save(filename,tokens)
             [pth,nam,ext] = fileparts(filename);
-            fid = fopen(filename,'wt');
+            if ~ismember(ext,{'.vtt','.srt'})
+                error('Unknown format.');
+            end
+            fid = fopen(filename,'wt','native','UTF-8');
             switch lower(ext)
                 case '.vtt'
                     save_vtt(fid,tokens);
@@ -171,7 +174,7 @@ function opts = get_options(options)
 end
 
 function str = t2str(t,sep)
-    if nargin < 2, sep = ':'; end
+    if nargin < 2, sep = '.'; end
     ms = 10 * t;
     hr = floor(ms / (1000 * 60 * 60));
     ms = ms - hr * (1000 * 60 * 60);
@@ -187,7 +190,7 @@ function save_vtt(fid,tok)
     fprintf(fid,'WEBVTT\n\n');
     for i=1:numel(tok)
         if isempty(tok(i).text), continue; end
-        fprintf(fid,'%s --> %s\n- %s\n\n',...
+        fprintf(fid,'%s --> %s\n%s\n\n',...
             t2str(tok(i).t0), t2str(tok(i).t1), strtrim(tok(i).text));
     end
 end

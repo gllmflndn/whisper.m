@@ -2,3 +2,5 @@
 *.o
 *.mex
 
+models/
+samples/

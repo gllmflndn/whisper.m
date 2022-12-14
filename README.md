@@ -4,7 +4,7 @@
 
 Automatic speech recognition in MATLAB/Octave based on the excellent [whisper.cpp](https://github.com/ggerganov/whisper.cpp) from [Georgi Gerganov](https://github.com/ggerganov) and models from [OpenAI's Whisper](https://github.com/openai/whisper).
 
-## Example
+## Demo
 
 ```
 >> whisper.demo()
@@ -27,3 +27,12 @@ whisper_model_load: memory size   =   11.41 MB
 whisper_model_load: model size    =   73.54 MB
 ```
 <font color="#FF8700"> And</font><font color="#87FF00"> so</font><font color="#FF5F00"> my</font><font color="#5FFF00"> fellow</font><font color="#D7FF00"> Americans</font><font color="#FF0000"> ask</font><font color="#FFFF00"> not</font><font color="#FFAF00"> what</font><font color="#87FF00"> your</font><font color="#5FFF00"> country</font><font color="#87FF00"> can</font><font color="#5FFF00"> do</font><font color="#AFFF00"> for</font><font color="#87FF00"> you</font><font color="#FFFF00"> ask</font><font color="#5FFF00"> what you can do for your country</font>
+
+## Usage
+
+```matlab
+hW = whisper('small');
+[segments,tokens] = hW.run('speech.wav',...
+                        'print_realtime',true,'print_progress',false);
+whisper.display_tokens(tokens);
+```
