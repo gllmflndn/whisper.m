@@ -35,15 +35,10 @@ classdef whisper < handle
         %------------------------------------------------------------------
         %-Run forward pass
         %------------------------------------------------------------------
-        function [segments,tokens] = run(this,wav,varargin)
+        function [segments,tokens] = run(this,sound,varargin)
             opts = get_options(varargin);
-            if ~isnumeric(wav)
-                [wav,Fs] = audioread(wav);
-                if Fs ~= 16000
-                    error('Sampling rate has to be 16kHz.');
-                end
-            end
-            [segments,tokens] = whisper_mex('run',this.Context,single(wav),opts);
+            sound = get_sound(sound);
+            [segments,tokens] = whisper_mex('run',this.Context,sound,opts);
         end
         
         %------------------------------------------------------------------
@@ -62,7 +57,7 @@ classdef whisper < handle
 
         function demo(model,sound,varargin)
             if nargin < 1 || isempty(model), model = 'tiny.en'; end
-            if nargin < 2, sound = 'jfk'; end
+            if nargin < 2 || isempty(sound), sound = 'jfk'; end
             sound     = get_sound(sound);
             hW        = whisper(model);
             [seg,tok] = hW.run(sound,varargin{:});
@@ -114,6 +109,27 @@ classdef whisper < handle
             fclose(fid);
         end
 
+        function Y = speak(text,lang)
+            % eSpeak NG: https://github.com/espeak-ng/espeak-ng/
+            % Web Speeh API: https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API
+            % e.g. https://github.com/zolomohan/text-to-speech
+            if isnumeric(text), sound(text,16000); return; end
+            if nargin < 2, lang = 'en'; end
+            if nargout, wav = ['-w ' tempname '.wav']; else wav = ''; end
+            cmd = 'espeak'; % or 'espeak-ng'
+            if isstruct(text)
+                text = [text.text];
+            end
+            text = strrep(text,'"','\"');
+            sts = system(sprintf('%s -v %s %s "%s"',cmd,lang,wav,text));
+            if sts
+                error('espeak not available.');
+            end
+            if nargout
+                Y = get_sound(wav(4:end));
+            end
+        end
+
     end
 
 end
@@ -144,20 +160,26 @@ function model = get_model(model)
 end
 
 function sound = get_sound(sound)
-    if isnumeric(sound), return; end
-    pth   = fileparts(fullfile(mfilename('fullpath')));
-    pth   = fullfile(pth,'..','samples');
-    if ismember(sound,{'jfk'})
-        sound = fullfile(pth,'..','whisper.cpp','samples',sound);
-    else
-        sound = fullfile(pth,sound);
-    end
-    if ~exist(sound,'file')
-        sound = [sound '.wav'];
+    if ~isnumeric(sound)
+        pth = fileparts(fullfile(mfilename('fullpath')));
+        pth = fullfile(pth,'..','samples');
+        if ismember(sound,{'jfk'})
+            pth = fullfile(pth,'..','whisper.cpp','samples');
+        end
+        [p,n,e] = fileparts(sound);
+        if isempty(e), e = '.wav'; end
+        if isempty(p) && isempty(e), p = pth; end
+        sound = fullfile(p,[n e]);
         if ~exist(sound,'file')
             error('Sound file cannot be found.');
         end
+        [sound,Fs] = audioread(sound);
+        if Fs ~= 16000
+            warning('Sampling rate has to be 16kHz. Resampling.');
+        end
+        sound = resample(sound(:)', 16000/Fs);
     end
+    sound = single(sound);
 end
 
 function opts = get_options(options)
@@ -202,4 +224,45 @@ function save_srt(fid,tok)
         fprintf(fid,'%d\n%s --> %s\n%s\n\n',...
             i, t2str(tok(i).t0,','), t2str(tok(i).t1,','), strtrim(tok(i).text));
     end
+end
+
+function d = edit_distance(s,t)
+% Levenshtein distance: https://en.wikipedia.org/wiki/Levenshtein_distance
+% Cleve Moler: https://blogs.mathworks.com/cleve/2017/08/14/levenshtein-edit-distance-between-strings/
+    m = length(s);
+    n = length(t);
+    x = 0:n;
+    y = zeros(1,n+1);
+    for i = 1:m
+        y(1) = i;
+        for j = 1:n
+            c = (s(i) ~= t(j)); % c = 0 if chars match, 1 if not.
+            y(j+1) = min([y(j) + 1, x(j+1) + 1, x(j) + c]);
+        end
+        % swap
+        [x,y] = deal(y,x);
+    end
+    d = x(n+1);
+end
+
+function Y = resample(X,alpha)
+% Resample data to a new rate: https://www.mathworks.com/help/signal/ref/resample.html
+% Jean Daunizeau: https://github.com/spm/spm
+    N0     = size(X,2);
+    N      = floor(N0*alpha);
+    alpha  = N/N0;
+    Y      = fftshift(fft(X,[],2),2);
+    sy     = size(Y,2);
+    middle = floor(sy./2)+1;
+    if alpha > 1
+        N2 = floor((N-N0)./2);
+        if N0/2 == floor(N0/2)
+            Y(:,1) = [];
+        end
+        Y  = [zeros(size(Y,1),N2),Y,zeros(size(Y,1),N2)];
+    else
+        N2 = floor(N./2);
+        Y  = Y(:,middle-N2:middle+N2);
+    end
+    Y      = alpha*ifft(ifftshift(Y,2),[],2);
 end

@@ -213,6 +213,9 @@ static void mex_whisper_run (int nlhs, mxArray *plhs[], int nrhs, const mxArray 
             }
             else if (!strcmp (fieldname, "language")) {
                 wparams.language = mxArrayToString (mx);
+                if (whisper_lang_id (wparams.language) == -1) {
+                    mexErrMsgIdAndTxt ("whisper:params", "Unknown language");
+                }
             }
             else if (!strcmp (fieldname, "new_segment_callback")) {
                 wparams.new_segment_callback = new_segment_callback;
@@ -228,6 +231,14 @@ static void mex_whisper_run (int nlhs, mxArray *plhs[], int nrhs, const mxArray 
             else {
                 mexErrMsgIdAndTxt ("whisper:params", "Unknown parameter");
             }
+        }
+    }
+    
+    if (!whisper_is_multilingual (ctx)) {
+        if (wparams.language != "en" || wparams.translate) {
+            wparams.language = "en";
+            wparams.translate = false;
+            mexWarnMsgIdAndTxt ("whisper:multilingual","Model is not multilingual, ignoring language and translation options.", __func__);
         }
     }
     
