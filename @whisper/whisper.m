@@ -109,10 +109,26 @@ classdef whisper < handle
             fclose(fid);
         end
 
+        function download(varargin)
+            if strcmp(varargin,{'all'})
+                varargin = {...
+                    'tiny.en',   'tiny',...
+                    'base.en',   'base',...
+                    'small.en',  'small',...
+                    'medium.en', 'medium',...
+                    'large-v1',  'large'};
+            end
+            for i=1:numel(varargin)
+                try
+                    get_model(varargin{i});
+                catch
+                    warning('Download of model "%s" failed.',varargin{i});
+                end
+            end
+        end
+
         function Y = speak(text,lang)
             % eSpeak NG: https://github.com/espeak-ng/espeak-ng/
-            % Web Speeh API: https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API
-            % e.g. https://github.com/zolomohan/text-to-speech
             if isnumeric(text), sound(text,16000); return; end
             if nargin < 2 || isempty(lang), lang = 'en'; end
             if nargout, wav = ['-w ' tempname '.wav']; else wav = ''; end
@@ -123,12 +139,28 @@ classdef whisper < handle
             text = strrep(text,'"','\"');
             sts = system(sprintf('%s -v %s %s "%s"',cmd,lang,wav,text));
             if sts
-                error('espeak not available.');
+                % Use Web Speeh API instead
+                web_speech(text);
             end
             if nargout
                 Y = get_sound(wav(4:end));
                 delete(wav(4:end));
             end
+        end
+
+        function web_speech(text)
+            % Web Speech API: https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API
+            % e.g. https://github.com/mdn/dom-examples/tree/main/web-speech-api/speak-easy-synthesis
+            pth  = fileparts(fullfile(mfilename('fullpath')));
+            html = fullfile(pth,'..','extra','index.html');
+            html = fileread(html);
+            if isstruct(text), text = [text.text]; end
+            html = strrep(html,'{WHISPER}',text);
+            tmp  = [tempname '.html'];
+            fid  = fopen(tmp,'wt');
+            fprintf(fid,'%s',html);
+            fclose(fid);
+            web(tmp,'-browser');
         end
 
     end

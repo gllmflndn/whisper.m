@@ -47,7 +47,8 @@ make MEX="mkoctfile --mex" MEXEXT=mex
 ```matlab
 w = whisper('small');
 [segments,tokens] = w.run('input.wav',...
-                    'print_realtime',true,'print_progress',false);
+                          'print_realtime', true,...
+                          'print_progress', false);
 whisper.display_tokens(tokens);
 ```
 
