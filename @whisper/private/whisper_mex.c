@@ -8,8 +8,7 @@
 #include <string.h>
 
 static struct whisper_context *get_whisper_context (const mxArray *c) {
-    if (!mxIsUint64 (c) || 
-        mxGetNumberOfElements (c) != 1)
+    if (!mxIsUint64 (c) || mxGetNumberOfElements (c) != 1)
         mexErrMsgIdAndTxt ("whisper:context", "Context handle is not valid.");
     return (struct whisper_context*)(((uint64_t*)mxGetData (c))[0]);
 }
@@ -24,13 +23,10 @@ static mxArray *get_tokens (struct whisper_context *ctx, int n_new) {
     for (int i = s0; i < n_segments; ++i) {
         n_tokens += whisper_full_n_tokens (ctx, i);
     }
-    const char *fields[] = {"text", "p", "t0", "t1"};
-    mxArray *mx = mxCreateStructMatrix (1, n_tokens, 4, fields);
+    const char *fields[] = {"text", "p", "t0", "t1", "segment"};
+    mxArray *mx = mxCreateStructMatrix (1, n_tokens, 5, fields);
     int k = 0;
     for (int i = s0; i < n_segments; ++i) {
-        const int64_t t0 = whisper_full_get_segment_t0 (ctx, i);
-        const int64_t t1 = whisper_full_get_segment_t1 (ctx, i);
-        
         for (int j = 0; j < whisper_full_n_tokens (ctx, i); ++j) {
             if (true) { // (wparams.print_special == false) {
                 const whisper_token id = whisper_full_get_token_id (ctx, i, j);
@@ -43,11 +39,11 @@ static mxArray *get_tokens (struct whisper_context *ctx, int n_new) {
             const whisper_token_data data = whisper_full_get_token_data (ctx, i, j);
             mxSetFieldByNumber (mx, k, 0, mxCreateString (text));
             mxSetFieldByNumber (mx, k, 1, mxCreateDoubleScalar (data.p));
-            // requires option ('token_timestamps',true) else t0,t1 set to -1
+            // requires option ('token_timestamps',true) otherwise t0,t1 set to -1
             mxSetFieldByNumber (mx, k, 2, mxCreateDoubleScalar (data.t0));
             mxSetFieldByNumber (mx, k, 3, mxCreateDoubleScalar (data.t1));
+            mxSetFieldByNumber (mx, k, 4, mxCreateDoubleScalar (i + 1));
             k++;
-            //mexPrintf("%s", text);
         }
     }
     return mx;
@@ -61,7 +57,6 @@ static mxArray *get_segments (struct whisper_context *ctx, int n_new) {
     const int s0 = n_segments - n_new;
     const char *fields[] = {"text", "t0", "t1"};
     mxArray *mx = mxCreateStructMatrix (1, n_segments, 3, fields);
-    int k = 0;
     for (int i = s0; i < n_segments; ++i) {
         const int64_t t0 = whisper_full_get_segment_t0 (ctx, i);
         const int64_t t1 = whisper_full_get_segment_t1 (ctx, i);
@@ -235,7 +230,7 @@ static void mex_whisper_run (int nlhs, mxArray *plhs[], int nrhs, const mxArray 
     }
     
     if (!whisper_is_multilingual (ctx)) {
-        if (wparams.language != "en" || wparams.translate) {
+        if (strcmp (wparams.language, "en") != 0 || wparams.translate) {
             wparams.language = "en";
             wparams.translate = false;
             mexWarnMsgIdAndTxt ("whisper:multilingual","Model is not multilingual, ignoring language and translation options.", __func__);
