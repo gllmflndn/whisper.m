@@ -1,15 +1,21 @@
-MEX = mex
-MEXEXT = mexa64
-OBJEXT = o
-CFLAGS = -O3 -mavx -mavx2 -mfma -mf16c # see whisper.cpp/Makefile
+MEX    ?= mex
+MEXEXT ?= mexa64
+OBJEXT ?= o
+MAKE   = make
+MOVE   = mv -f
+DEL    = rm -f
 
 all: @whisper/private/whisper_mex.$(MEXEXT)
 
-@whisper/private/whisper_mex.$(MEXEXT): @whisper/private/whisper_mex.c @whisper/private/ggml.$(OBJEXT) @whisper/private/whisper.$(OBJEXT)
-	$(MEX) @whisper/private/whisper_mex.c -I. @whisper/private/ggml.$(OBJEXT) @whisper/private/whisper.$(OBJEXT) -outdir @whisper/private/
+@whisper/private/whisper_mex.$(MEXEXT): @whisper/private/whisper_mex.c whisper.cpp/ggml.$(OBJEXT) whisper.cpp/whisper.$(OBJEXT)
+	$(MEX) @whisper/private/whisper_mex.c -I. whisper.cpp/ggml.$(OBJEXT) whisper.cpp/whisper.$(OBJEXT)
+	$(MOVE) whisper_mex.$(MEXEXT) @whisper/private/
 
-@whisper/private/whisper.$(OBJEXT): whisper.cpp/whisper.cpp whisper.cpp/whisper.h
-	$(MEX) -c whisper.cpp/whisper.cpp -outdir @whisper/private/
+whisper.cpp/ggml.$(OBJEXT): whisper.cpp/ggml.c whisper.cpp/ggml.h
+	$(MAKE) -C whisper.cpp ggml.$(OBJEXT)
 
-@whisper/private/ggml.$(OBJEXT): whisper.cpp/ggml.c whisper.cpp/ggml.h
-	$(MEX) CFLAGS='$$CFLAGS ${CFLAGS}' -c whisper.cpp/ggml.c -outdir @whisper/private/
+whisper.cpp/whisper.$(OBJEXT): whisper.cpp/whisper.cpp whisper.cpp/whisper.h
+	$(MAKE) -C whisper.cpp whisper.$(OBJEXT)
+
+clean:
+	$(DEL) -f whisper.cpp/ggml.$(OBJEXT) whisper.cpp/whisper.$(OBJEXT) @whisper/private/whisper_mex.$(MEXEXT)

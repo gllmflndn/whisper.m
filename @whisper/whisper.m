@@ -114,7 +114,7 @@ classdef whisper < handle
             % Web Speeh API: https://developer.mozilla.org/en-US/docs/Web/API/Web_Speech_API
             % e.g. https://github.com/zolomohan/text-to-speech
             if isnumeric(text), sound(text,16000); return; end
-            if nargin < 2, lang = 'en'; end
+            if nargin < 2 || isempty(lang), lang = 'en'; end
             if nargout, wav = ['-w ' tempname '.wav']; else wav = ''; end
             cmd = 'espeak'; % or 'espeak-ng'
             if isstruct(text)
@@ -127,6 +127,7 @@ classdef whisper < handle
             end
             if nargout
                 Y = get_sound(wav(4:end));
+                delete(wav(4:end));
             end
         end
 
@@ -167,8 +168,8 @@ function sound = get_sound(sound)
             pth = fullfile(pth,'..','whisper.cpp','samples');
         end
         [p,n,e] = fileparts(sound);
-        if isempty(e), e = '.wav'; end
         if isempty(p) && isempty(e), p = pth; end
+        if isempty(e), e = '.wav'; end
         sound = fullfile(p,[n e]);
         if ~exist(sound,'file')
             error('Sound file cannot be found.');
@@ -176,8 +177,8 @@ function sound = get_sound(sound)
         [sound,Fs] = audioread(sound);
         if Fs ~= 16000
             warning('Sampling rate has to be 16kHz. Resampling.');
+            sound = resample(sound(:)', 16000/Fs);
         end
-        sound = resample(sound(:)', 16000/Fs);
     end
     sound = single(sound);
 end
