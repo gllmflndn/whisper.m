@@ -208,11 +208,13 @@ function sound = get_sound(sound)
             error('Sound file cannot be found.');
         end
         [sound,Fs] = audioread(sound);
+        sound = sound.';
         if Fs ~= 16000
             warning('Sampling rate has to be 16kHz. Resampling.');
-            sound = resample(sound(:)', 16000/Fs);
+            sound = resample(sound, 16000/Fs);
         end
     end
+    if size(sound,1) > 1, sound = mean(sound,1); end
     sound = single(sound);
 end
 
