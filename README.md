@@ -30,16 +30,26 @@ whisper_model_load: model size    =   73.54 MB
 
 ## Installation
 
-To compile for MATLAB, run `make` from a Terminal:
+### MATLAB
+
+On Linux, run `make` from a Terminal:
 
 ```
 make
 ```
 
-To compile for GNU Octave, use the following:
+On macOS, using the Accelerate framework, run the following from a Terminal:
 
 ```
-make MEX="mkoctfile --mex" MEXEXT=mex
+make MEXEXT=mexmaci64
+```
+
+### GNU Octave
+
+Run the following from a Terminal:
+
+```
+make MEXBIN="mkoctfile --mex" MEXEXT=mex
 ```
 
 ## Usage

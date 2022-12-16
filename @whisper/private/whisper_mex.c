@@ -23,26 +23,25 @@ static mxArray *get_tokens (struct whisper_context *ctx, int n_new) {
     for (int i = s0; i < n_segments; ++i) {
         n_tokens += whisper_full_n_tokens (ctx, i);
     }
-    const char *fields[] = {"text", "p", "t0", "t1", "segment"};
-    mxArray *mx = mxCreateStructMatrix (1, n_tokens, 5, fields);
+    const char *fields[] = {"text", "t0", "t1", "id", "p", "segment"};
+    mxArray *mx = mxCreateStructMatrix (1, n_tokens, 6, fields);
     int k = 0;
     for (int i = s0; i < n_segments; ++i) {
         for (int j = 0; j < whisper_full_n_tokens (ctx, i); ++j) {
-            if (true) { // (wparams.print_special == false) {
-                const whisper_token id = whisper_full_get_token_id (ctx, i, j);
-                if (id >= whisper_token_eot (ctx)) {
-                    continue;
-                }
+            // (wparams.print_special == false)
+            const whisper_token_data data = whisper_full_get_token_data (ctx, i, j);
+            if (data.id >= whisper_token_eot (ctx)) {
+                continue;
             }
 
             const char * text = whisper_full_get_token_text (ctx, i, j);
-            const whisper_token_data data = whisper_full_get_token_data (ctx, i, j);
             mxSetFieldByNumber (mx, k, 0, mxCreateString (text));
-            mxSetFieldByNumber (mx, k, 1, mxCreateDoubleScalar (data.p));
             // requires option ('token_timestamps',true) otherwise t0,t1 set to -1
-            mxSetFieldByNumber (mx, k, 2, mxCreateDoubleScalar (data.t0));
-            mxSetFieldByNumber (mx, k, 3, mxCreateDoubleScalar (data.t1));
-            mxSetFieldByNumber (mx, k, 4, mxCreateDoubleScalar (i + 1));
+            mxSetFieldByNumber (mx, k, 1, mxCreateDoubleScalar (data.t0));
+            mxSetFieldByNumber (mx, k, 2, mxCreateDoubleScalar (data.t1));
+            mxSetFieldByNumber (mx, k, 3, mxCreateDoubleScalar (data.id));
+            mxSetFieldByNumber (mx, k, 4, mxCreateDoubleScalar (data.p));
+            mxSetFieldByNumber (mx, k, 5, mxCreateDoubleScalar (i + 1));
             k++;
         }
     }
