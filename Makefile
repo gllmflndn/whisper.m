@@ -1,15 +1,26 @@
 MEXBIN ?= mex
-MEXEXT ?= mexa64
 MEXOPT  =
 OBJEXT ?= o
 MAKE    = make
 MOVE    = mv -f
 DEL     = rm -f
 
-ifndef WHISPER_NO_ACCELERATE
-  ifeq ($(shell uname -s),Darwin)
+PLATFORM ?= $(shell uname)
+
+ifeq ($(PLATFORM),Linux)
+  MEXEXT = mexa64
+endif
+
+ifeq ($(PLATFORM),Darwin)
+  MEXEXT = mexmaci64
+  ifndef WHISPER_NO_ACCELERATE
     MEXOPT += LDFLAGS='$$LDFLAGS -framework Accelerate'
   endif
+endif
+
+ifndef MEXEXT
+  MEXEXT = mexw64
+  MEXOPT += CLIBS='$$CLIBS -lstdc++'
 endif
 
 
