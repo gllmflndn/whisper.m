@@ -195,9 +195,10 @@ end
 function sound = get_sound(sound)
     if ~isnumeric(sound)
         pth = fileparts(fullfile(mfilename('fullpath')));
-        pth = fullfile(pth,'..','samples');
         if ismember(sound,{'jfk'})
             pth = fullfile(pth,'..','whisper.cpp','samples');
+        else
+            pth = fullfile(pth,'..','samples');
         end
         [p,n,e] = fileparts(sound);
         if isempty(p) && isempty(e), p = pth; end
