@@ -56,10 +56,10 @@ make MEXBIN="mkoctfile --mex" MEXEXT=mex
 
 ```matlab
 w = whisper('small');
-[segments,tokens] = w.run('input.wav',...
+[segments,tokens] = w.transcribe('input.wav',...
                           'print_realtime', true,...
                           'print_progress', false);
 whisper.display_tokens(tokens);
 ```
 
-Pre-trained models will be downloaded automatically when needed and stored in a `models` directory.
+Pre-trained models will be downloaded automatically from [Hugging Face](https://huggingface.co/datasets/ggerganov/whisper.cpp) when needed and stored in a `models` directory.

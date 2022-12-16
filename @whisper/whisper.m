@@ -25,7 +25,7 @@ classdef whisper < handle
         %------------------------------------------------------------------
         function this = whisper(model)
             if ~nargin
-                model = 'base.en';
+                model = 'small';
             end
             model = get_model(model);
             this.Model = model;
@@ -33,9 +33,9 @@ classdef whisper < handle
         end
         
         %------------------------------------------------------------------
-        %-Run forward pass
+        %-Transcribe
         %------------------------------------------------------------------
-        function [segments,tokens] = run(this,sound,varargin)
+        function [segments,tokens] = transcribe(this,sound,varargin)
             opts = get_options(varargin);
             sound = get_sound(sound);
             [segments,tokens] = whisper_mex('run',this.Context,sound,opts);
@@ -59,8 +59,8 @@ classdef whisper < handle
             if nargin < 1 || isempty(model), model = 'tiny.en'; end
             if nargin < 2 || isempty(sound), sound = 'jfk'; end
             sound     = get_sound(sound);
-            hW        = whisper(model);
-            [seg,tok] = hW.run(sound,varargin{:});
+            w         = whisper(model);
+            [seg,tok] = w.transcribe(sound,varargin{:});
             whisper.display_tokens(tok)
         end
 
