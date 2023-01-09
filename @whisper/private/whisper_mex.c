@@ -104,7 +104,7 @@ static void mex_whisper_init (int nlhs, mxArray *plhs[], int nrhs, const mxArray
     if (!mxIsChar (prhs[0])) mexErrMsgIdAndTxt ("whisper:model", "Path of model must be a string.");
     path_model = mxArrayToString (prhs[0]);
     
-    ctx = whisper_init (path_model);
+    ctx = whisper_init_from_file (path_model);
     if (ctx == NULL) {
         mexErrMsgIdAndTxt ("whisper:model", "Failed to load model.");
     }
