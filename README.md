@@ -1,6 +1,7 @@
 # whisper.m
 
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/gllmflndn/whisper.m/actions/workflows/test.yml/badge.svg?branch=main)](https://github.com/gllmflndn/whisper.m/actions/workflows/test.yml)
 
 Automatic speech recognition in MATLAB/Octave based on the excellent [whisper.cpp](https://github.com/ggerganov/whisper.cpp) from [Georgi Gerganov](https://github.com/ggerganov) and models from [OpenAI's Whisper](https://github.com/openai/whisper).
 
@@ -26,6 +27,8 @@ make MEXBIN="mkoctfile --mex" MEXEXT=mex
 
 ## Usage
 
+To run `whisper.m` on a pre-recorded audio file (mono, 16kHz) called `input.wav`:
+
 ```matlab
 w = whisper('small');
 [segments,tokens] = w.transcribe('input.wav',...
@@ -35,6 +38,8 @@ whisper.display_tokens(tokens);
 ```
 
 Pre-trained models will be downloaded automatically from [Hugging Face](https://huggingface.co/datasets/ggerganov/whisper.cpp) when needed and stored in a `models` directory.
+
+Another example to record audio data and run `whisper.m`:
 
 ```matlab
 Fs = 16000;
@@ -54,7 +59,7 @@ w = whisper('small');
 whisper.display_tokens(tokens);
 ```
 
-## Demo
+There is also a demo that uses an audio file shipped with `whisper.cpp`:
 
 ```
 >> whisper.demo()
