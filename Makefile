@@ -38,3 +38,9 @@ whisper.cpp/whisper.$(OBJEXT): whisper.cpp/whisper.cpp whisper.cpp/whisper.h
 
 clean:
 	$(DEL) -f whisper.cpp/ggml.$(OBJEXT) whisper.cpp/whisper.$(OBJEXT) @whisper/private/whisper_mex.$(MEXEXT)
+        
+update:
+	git submodule update --remote --merge
+
+test:
+	matlab -nodesktop -nodisplay -nosplash -batch "whisper.demo()"
