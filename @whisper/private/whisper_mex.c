@@ -67,7 +67,7 @@ static mxArray *get_segments (struct whisper_context *ctx, int n_new) {
     return mx;
 }
 
-static void new_segment_callback (struct whisper_context *ctx, int n_new, void *user_data) {
+static void new_segment_callback (struct whisper_context *ctx, struct whisper_state *state, int n_new, void *user_data) {
    //mexPrintf("new_segment_callback\n");
    mxArray *mi[2];
    mi[0] = ((mxArray**)user_data)[0];
@@ -78,7 +78,7 @@ static void new_segment_callback (struct whisper_context *ctx, int n_new, void *
    }
 }
 
-static bool encoder_begin_callback (struct whisper_context *ctx, void *user_data) {
+static bool encoder_begin_callback (struct whisper_context *ctx, struct whisper_state *state, void *user_data) {
     //mexPrintf("encoder_begin_callback\n");
     bool is_aborted = false;
     mxArray *mi[2];
