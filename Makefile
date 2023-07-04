@@ -42,5 +42,5 @@ clean:
 update:
 	git submodule update --remote --merge
 
-test:
+test: @whisper/private/whisper_mex.$(MEXEXT)
 	matlab -nodesktop -nodisplay -nosplash -batch "whisper.demo()"
