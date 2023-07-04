@@ -180,7 +180,7 @@ function model = get_model(model)
             if ~exist(pth,'dir')
                 mkdir(pth);
             end
-            url  = 'https://huggingface.co/datasets/ggerganov/whisper.cpp/resolve/main/';
+            url  = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/';
             fprintf('Download %s...',model);
             urlwrite([url name],filename);
             fprintf('done\n');
