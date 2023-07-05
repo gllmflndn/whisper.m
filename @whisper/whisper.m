@@ -182,7 +182,7 @@ function model = get_model(model)
             end
             url  = 'https://huggingface.co/ggerganov/whisper.cpp/resolve/main/';
             fprintf('Download %s...',model);
-            [~,sts] = urlwrite([url name],filename,'Timeout',10);
+            [~,sts] = urlwrite([url name],filename);
             if ~sts
                 error('Download of model weights failed.');
             end
