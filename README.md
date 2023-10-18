@@ -43,7 +43,7 @@ w = whisper('small');
 whisper.display_tokens(tokens);
 ```
 
-Pre-trained models will be downloaded automatically from [Hugging Face](https://huggingface.co/ggerganov/whisper.cpp) when needed and stored in a `models` directory. Model options are `tiiny`, `tiny.en`, `base`, `base.en`, `small`, `small.en`, `medium`, `medium.en` and `large.
+Pre-trained models will be downloaded automatically from [Hugging Face](https://huggingface.co/ggerganov/whisper.cpp) when needed and stored in a `models` directory. Model options are `tiny`, `tiny.en`, `base`, `base.en`, `small`, `small.en`, `medium`, `medium.en` and `large`.
 
 Another example to record audio data and run `whisper.m`:
 
