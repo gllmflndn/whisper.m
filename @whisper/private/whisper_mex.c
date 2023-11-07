@@ -96,6 +96,7 @@ static bool encoder_begin_callback (struct whisper_context *ctx, struct whisper_
 static void mex_whisper_init (int nlhs, mxArray *plhs[], int nrhs, const mxArray *prhs[]) {
     struct whisper_context *ctx;
     char *path_model;
+    struct whisper_context_params cparams;
     uint64_t *c;
     
     if (nrhs < 1) mexErrMsgIdAndTxt ("whisper:minrhs", "Not enough input arguments.");
@@ -104,7 +105,7 @@ static void mex_whisper_init (int nlhs, mxArray *plhs[], int nrhs, const mxArray
     if (!mxIsChar (prhs[0])) mexErrMsgIdAndTxt ("whisper:model", "Path of model must be a string.");
     path_model = mxArrayToString (prhs[0]);
     
-    ctx = whisper_init_from_file (path_model);
+    ctx = whisper_init_from_file_with_params (path_model, cparams);
     if (ctx == NULL) {
         mexErrMsgIdAndTxt ("whisper:model", "Failed to load model.");
     }

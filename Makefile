@@ -26,8 +26,8 @@ endif
 
 all: @whisper/private/whisper_mex.$(MEXEXT)
 
-@whisper/private/whisper_mex.$(MEXEXT): @whisper/private/whisper_mex.c whisper.cpp/ggml.$(OBJEXT) whisper.cpp/ggml-alloc.$(OBJEXT) whisper.cpp/whisper.$(OBJEXT)
-	$(MEXBIN) @whisper/private/whisper_mex.c -I. whisper.cpp/ggml.$(OBJEXT) whisper.cpp/ggml-alloc.$(OBJEXT) whisper.cpp/whisper.$(OBJEXT) $(MEXOPT)
+@whisper/private/whisper_mex.$(MEXEXT): @whisper/private/whisper_mex.c whisper.cpp/ggml.$(OBJEXT) whisper.cpp/ggml-alloc.$(OBJEXT) whisper.cpp/ggml-backend.$(OBJEXT) whisper.cpp/ggml-quants.$(OBJEXT) whisper.cpp/whisper.$(OBJEXT)
+	$(MEXBIN) @whisper/private/whisper_mex.c -I. whisper.cpp/ggml.$(OBJEXT) whisper.cpp/ggml-alloc.$(OBJEXT) whisper.cpp/ggml-backend.$(OBJEXT) whisper.cpp/ggml-quants.$(OBJEXT) whisper.cpp/whisper.$(OBJEXT) $(MEXOPT)
 	$(MOVE) whisper_mex.$(MEXEXT) @whisper/private/
 
 whisper.cpp/ggml.$(OBJEXT): whisper.cpp/ggml.c whisper.cpp/ggml.h
@@ -35,6 +35,12 @@ whisper.cpp/ggml.$(OBJEXT): whisper.cpp/ggml.c whisper.cpp/ggml.h
 
 whisper.cpp/ggml-alloc.$(OBJEXT): whisper.cpp/ggml-alloc.c whisper.cpp/ggml.h whisper.cpp/ggml-alloc.h
 	$(MAKE) -C whisper.cpp ggml-alloc.$(OBJEXT)
+        
+whisper.cpp/ggml-backend.$(OBJEXT): whisper.cpp/ggml-backend.c whisper.cpp/ggml.h whisper.cpp/ggml-backend.h
+	$(MAKE) -C whisper.cpp ggml-backend.$(OBJEXT)
+        
+whisper.cpp/ggml-quants.$(OBJEXT): whisper.cpp/ggml-quants.c whisper.cpp/ggml.h whisper.cpp/ggml-quants.h
+	$(MAKE) -C whisper.cpp ggml-quants.$(OBJEXT)
 
 whisper.cpp/whisper.$(OBJEXT): whisper.cpp/whisper.cpp whisper.cpp/whisper.h
 	$(MAKE) -C whisper.cpp whisper.$(OBJEXT)
