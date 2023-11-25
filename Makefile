@@ -4,6 +4,9 @@ OBJEXT ?= o
 MAKE    = make
 MOVE    = mv -f
 DEL     = rm -f
+MATLAB  = matlab -nodesktop -nodisplay -nosplash -batch
+OCTAVE  = octave --no-gui --quiet --eval
+EXEC   ?= $(MATLAB)
 
 PLATFORM ?= $(shell uname)
 
@@ -52,4 +55,4 @@ update:
 	git submodule update --remote --merge
 
 test: @whisper/private/whisper_mex.$(MEXEXT)
-	matlab -nodesktop -nodisplay -nosplash -batch "whisper.demo()"
+	$(EXEC) "whisper.demo()"
