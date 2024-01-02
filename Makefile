@@ -23,7 +23,7 @@ ifeq ($(PLATFORM),Darwin)
   endif
   ifndef WHISPER_NO_METAL
     MEXOPT += LDFLAGS='$$LDFLAGS -framework Foundation -framework Metal -framework MetalKit'
-endif
+  endif
 endif
 
 ifndef MEXEXT

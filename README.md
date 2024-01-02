@@ -28,7 +28,7 @@ The Accelerate and Metal frameworks will be used on macOS. On Windows, use [MSYS
 Run the following from a Terminal:
 
 ```
-make MEXBIN="mkoctfile --mex" MEXEXT=mex
+make MEXBIN="mkoctfile --mex" MEXEXT=mex MEXOPT=""
 ```
 
 ## Usage
