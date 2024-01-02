@@ -21,7 +21,7 @@ Run `make` from a Terminal:
 make
 ```
 
-The Accelerate framework will be used on macOS. On Windows, use [MSYS2](https://www.msys2.org/) and [MinGW-w64](https://www.mingw-w64.org/), see [MATLAB Support](https://uk.mathworks.com/matlabcentral/fileexchange/52848-matlab-support-for-mingw-w64-c-c-compiler).
+The Accelerate and Metal frameworks will be used on macOS. On Windows, use [MSYS2](https://www.msys2.org/) and [MinGW-w64](https://www.mingw-w64.org/), see [MATLAB Support](https://uk.mathworks.com/matlabcentral/fileexchange/52848-matlab-support-for-mingw-w64-c-c-compiler).
 
 ### GNU Octave
 

@@ -1,9 +1,11 @@
 MEXBIN ?= mex
 MEXOPT  =
 OBJEXT ?= o
+LIBEXT ?= a
 MAKE    = make
 MOVE    = mv -f
 DEL     = rm -f
+GIT     = git
 MATLAB  = matlab -nodesktop -nodisplay -nosplash -batch
 OCTAVE  = octave --no-gui --quiet --eval
 EXEC   ?= $(MATLAB)
@@ -15,10 +17,13 @@ ifeq ($(PLATFORM),Linux)
 endif
 
 ifeq ($(PLATFORM),Darwin)
-  MEXEXT = mexmaci64
+  MEXEXT = mexmaca64
   ifndef WHISPER_NO_ACCELERATE
     MEXOPT += LDFLAGS='$$LDFLAGS -framework Accelerate'
   endif
+  ifndef WHISPER_NO_METAL
+    MEXOPT += LDFLAGS='$$LDFLAGS -framework Foundation -framework Metal -framework MetalKit'
+endif
 endif
 
 ifndef MEXEXT
@@ -29,30 +34,18 @@ endif
 
 all: @whisper/private/whisper_mex.$(MEXEXT)
 
-@whisper/private/whisper_mex.$(MEXEXT): @whisper/private/whisper_mex.c whisper.cpp/ggml.$(OBJEXT) whisper.cpp/ggml-alloc.$(OBJEXT) whisper.cpp/ggml-backend.$(OBJEXT) whisper.cpp/ggml-quants.$(OBJEXT) whisper.cpp/whisper.$(OBJEXT)
-	$(MEXBIN) @whisper/private/whisper_mex.c -I. whisper.cpp/ggml.$(OBJEXT) whisper.cpp/ggml-alloc.$(OBJEXT) whisper.cpp/ggml-backend.$(OBJEXT) whisper.cpp/ggml-quants.$(OBJEXT) whisper.cpp/whisper.$(OBJEXT) $(MEXOPT)
+@whisper/private/whisper_mex.$(MEXEXT): @whisper/private/whisper_mex.c whisper.cpp/libwhisper.$(LIBEXT)
+	$(MEXBIN) @whisper/private/whisper_mex.c -I. whisper.cpp/libwhisper.$(LIBEXT) $(MEXOPT)
 	$(MOVE) whisper_mex.$(MEXEXT) @whisper/private/
 
-whisper.cpp/ggml.$(OBJEXT): whisper.cpp/ggml.c whisper.cpp/ggml.h
-	$(MAKE) -C whisper.cpp ggml.$(OBJEXT)
-
-whisper.cpp/ggml-alloc.$(OBJEXT): whisper.cpp/ggml-alloc.c whisper.cpp/ggml.h whisper.cpp/ggml-alloc.h
-	$(MAKE) -C whisper.cpp ggml-alloc.$(OBJEXT)
-        
-whisper.cpp/ggml-backend.$(OBJEXT): whisper.cpp/ggml-backend.c whisper.cpp/ggml.h whisper.cpp/ggml-backend.h
-	$(MAKE) -C whisper.cpp ggml-backend.$(OBJEXT)
-        
-whisper.cpp/ggml-quants.$(OBJEXT): whisper.cpp/ggml-quants.c whisper.cpp/ggml.h whisper.cpp/ggml-quants.h
-	$(MAKE) -C whisper.cpp ggml-quants.$(OBJEXT)
-
-whisper.cpp/whisper.$(OBJEXT): whisper.cpp/whisper.cpp whisper.cpp/whisper.h
-	$(MAKE) -C whisper.cpp whisper.$(OBJEXT)
+whisper.cpp/libwhisper.$(LIBEXT):
+	$(MAKE) -C whisper.cpp libwhisper.$(LIBEXT)
 
 clean:
-	$(DEL) -f whisper.cpp/ggml.$(OBJEXT) whisper.cpp/whisper.$(OBJEXT) @whisper/private/whisper_mex.$(MEXEXT)
+	$(DEL) whisper.cpp/*.$(OBJEXT) whisper.cpp/*.$(LIBEXT) @whisper/private/whisper_mex.$(MEXEXT)
         
 update:
-	git submodule update --remote --merge
+	$(GIT) submodule update --remote --merge --recursive
 
 test: @whisper/private/whisper_mex.$(MEXEXT)
 	$(EXEC) "whisper.demo()"
