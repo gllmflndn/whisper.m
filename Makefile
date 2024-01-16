@@ -41,11 +41,15 @@ all: @whisper/private/whisper_mex.$(MEXEXT)
 whisper.cpp/libwhisper.$(LIBEXT):
 	$(MAKE) -C whisper.cpp libwhisper.$(LIBEXT)
 
+.PHONY: clean
 clean:
-	$(DEL) whisper.cpp/*.$(OBJEXT) whisper.cpp/*.$(LIBEXT) @whisper/private/whisper_mex.$(MEXEXT)
-        
+	$(MAKE) -C whisper.cpp clean
+	$(DEL) @whisper/private/whisper_mex.$(MEXEXT)
+
+.PHONY: update
 update:
 	$(GIT) submodule update --remote --merge --recursive
 
+.PHONY: test
 test: @whisper/private/whisper_mex.$(MEXEXT)
 	$(EXEC) "whisper.demo()"
