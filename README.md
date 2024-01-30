@@ -61,7 +61,7 @@ disp('End of recording.')
 y = getaudiodata(rec);
 
 w = whisper('small');
-[segments,tokens] = w.transcribe(y,'print_progress', false);
+[segments,tokens] = w.transcribe(y','print_progress', false);
 whisper.display_tokens(tokens);
 ```
 
