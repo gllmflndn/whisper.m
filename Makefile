@@ -35,7 +35,7 @@ endif
 all: @whisper/private/whisper_mex.$(MEXEXT)
 
 @whisper/private/whisper_mex.$(MEXEXT): @whisper/private/whisper_mex.c whisper.cpp/libwhisper.$(LIBEXT)
-	$(MEXBIN) @whisper/private/whisper_mex.c -I. whisper.cpp/libwhisper.$(LIBEXT) $(MEXOPT)
+	$(MEXBIN) @whisper/private/whisper_mex.c -Iwhisper.cpp/include/ -Iwhisper.cpp/ggml/include whisper.cpp/libwhisper.$(LIBEXT) $(MEXOPT)
 	$(MOVE) whisper_mex.$(MEXEXT) @whisper/private/
 
 whisper.cpp/libwhisper.$(LIBEXT):

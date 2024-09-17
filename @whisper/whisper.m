@@ -1,6 +1,6 @@
 % Automatic speech recognition using whisper.cpp and OpenAI's Whisper
 %
-% Copyright (C) 2022 Guillaume Flandin
+% Copyright (C) 2022-2024 Guillaume Flandin
 
 classdef whisper < handle
 

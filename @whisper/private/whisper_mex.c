@@ -1,8 +1,8 @@
 /*
- * Copyright (C) 2022 Guillaume Flandin
+ * Copyright (C) 2022-2024 Guillaume Flandin
  */
 
-#include "whisper.cpp/whisper.h"
+#include "whisper.h"
 #include "mex.h"
 
 #include <string.h>
@@ -187,9 +187,6 @@ static void mex_whisper_run (int nlhs, mxArray *plhs[], int nrhs, const mxArray 
             }
             else if (!strcmp (fieldname, "max_tokens")) {
                 wparams.max_tokens = (int)mxGetScalar (mx);
-            }
-            else if (!strcmp (fieldname, "speed_up")) {
-                wparams.speed_up = mxIsLogicalScalarTrue (mx);
             }
             else if (!strcmp (fieldname, "audio_ctx")) {
                 wparams.audio_ctx = (int)mxGetScalar (mx);

@@ -15,7 +15,7 @@ git clone --recurse-submodules https://github.com/gllmflndn/whisper.m.git
 
 ### MATLAB
 
-Run `make` from a Terminal:
+Then compile the MEX file using `make` in a Terminal:
 
 ```
 make
@@ -25,7 +25,7 @@ The Accelerate and Metal frameworks will be used on macOS. On Windows, use [MSYS
 
 ### GNU Octave
 
-Run the following from a Terminal:
+If compiling for Octave, execute the following instead from a Terminal:
 
 ```
 make MEXBIN="mkoctfile --mex" MEXEXT=mex MEXOPT=""
