@@ -3,6 +3,7 @@ MEXOPT  =
 OBJEXT ?= o
 LIBEXT ?= a
 MAKE    = make
+CMAKE   = cmake
 MOVE    = mv -f
 DEL     = rm -f
 GIT     = git
@@ -34,16 +35,18 @@ endif
 
 all: @whisper/private/whisper_mex.$(MEXEXT)
 
-@whisper/private/whisper_mex.$(MEXEXT): @whisper/private/whisper_mex.c whisper.cpp/libwhisper.$(LIBEXT)
-	$(MEXBIN) @whisper/private/whisper_mex.c -Iwhisper.cpp/include/ -Iwhisper.cpp/ggml/include whisper.cpp/libwhisper.$(LIBEXT) $(MEXOPT)
+@whisper/private/whisper_mex.$(MEXEXT): @whisper/private/whisper_mex.c whisper.cpp/install/lib/libwhisper.$(LIBEXT)
+	$(MEXBIN) @whisper/private/whisper_mex.c -Iwhisper.cpp/install/include/ whisper.cpp/install/lib/*.$(LIBEXT) $(MEXOPT)
 	$(MOVE) whisper_mex.$(MEXEXT) @whisper/private/
 
-whisper.cpp/libwhisper.$(LIBEXT):
-	$(MAKE) -C whisper.cpp libwhisper.$(LIBEXT)
+whisper.cpp/install/lib/libwhisper.$(LIBEXT):
+	$(CMAKE) -S whisper.cpp/ -B whisper.cpp/build  -DBUILD_SHARED_LIBS=OFF -DCMAKE_INSTALL_PREFIX=whisper.cpp/install -DCMAKE_BUILD_TYPE=Release 
+	$(CMAKE) --build whisper.cpp/build
+	$(CMAKE) --build whisper.cpp/build --target install
 
 .PHONY: clean
 clean:
-	$(MAKE) -C whisper.cpp clean
+	$(CMAKE) --build whisper.cpp/build --target clean
 	$(DEL) @whisper/private/whisper_mex.$(MEXEXT)
 
 .PHONY: update
