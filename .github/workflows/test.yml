@@ -30,4 +30,4 @@ jobs:
       run: octave --no-gui --no-window-system --silent --eval "addpath (pwd); savepath ();"
 
     - name: Run whisper.m demo
-      run: octave --no-gui --no-window-system --silent --eval "try, whisper.demo (); exit (0); catch, exit (1); end_try_catch"
+      run: LD_LIBRARY_PATH=./whisper.cpp/install/lib/ octave --no-gui --no-window-system --silent --eval "try, whisper.demo (); exit (0); catch, exit (1); end_try_catch"
