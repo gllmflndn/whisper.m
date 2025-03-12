@@ -16,7 +16,7 @@ PLATFORM ?= $(shell uname)
 
 ifeq ($(PLATFORM),Linux)
   MEXEXT = mexa64
-  POST_INSTALL_CMD = chrpath --add "${PWD}/whisper.cpp/install/lib/" @whisper/private/whisper_mex.$(MEXEXT)
+#POST_INSTALL_CMD = chrpath --add "${PWD}/whisper.cpp/install/lib/" @whisper/private/whisper_mex.$(MEXEXT)
 endif
 
 ifeq ($(PLATFORM),Darwin)
